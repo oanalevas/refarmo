@@ -1,0 +1,131 @@
+﻿@*// <copyright>
+    // Copyright (c) 2019 All Rights Reserved
+    //
+</copyright>
+// <author>Oana Leva</author>*@
+@{
+    ViewBag.Title = "Home Page";
+}
+@model refarmo.Models.FeatureCollection
+
+<meta charset='utf-8' />
+<title>Points on a map</title>
+<meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+<script src='https://api.tiles.mapbox.com/mapbox-gl-js/v1.4.1/mapbox-gl.js'></script>
+<link href='https://api.tiles.mapbox.com/mapbox-gl-js/v1.4.1/mapbox-gl.css' rel='stylesheet' />
+<style>
+    #map {
+        position: absolute;
+        left: 25%;
+        top: 0;
+        bottom: 0;
+        width: 75%;
+    }
+
+    .map-overlay {
+        position: absolute;
+        width: 25%;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        font: 12px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
+        background-color: #fff;
+        max-height: 100%;
+        overflow: hidden;
+    }
+
+        .map-overlay fieldset {
+            background: #ddd;
+            border: none;
+            padding: 10px;
+            margin: 0;
+        }
+
+        .map-overlay .listing {
+            overflow: auto;
+            max-height: 100%;
+        }
+
+            .map-overlay .listing .listitem {
+                display: block;
+                padding: 5px 10px;
+                margin: 0;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+                color: #404;
+                text-decoration: none;
+            }
+
+            .map-overlay .listing span:hover {
+                background: #f0f0f0;
+            }
+</style>
+
+
+<div class='map-overlay'>
+    <fieldset><h3>Areas</h3></fieldset>
+    <div class="listing">
+        @foreach (var f in Model.features)
+        {
+            <span class="listitem" id="@f.Id" onclick="flyToStore(parseFloat(@f.Geometry.coordinates[0][0][0].ToString().Replace(',', '.')), parseFloat(@f.Geometry.coordinates[0][0][1].ToString().Replace(',', '.')))">
+                @f.Id
+            </span>
+        }
+    </div>
+</div>
+<div id='map' class='map'></div>
+
+
+<script>
+    mapboxgl.accessToken = 'pk.eyJ1Ijoib2FuYWxldmEiLCJhIjoiY2syNXQxNDltMHdsMDNqcW1nZzFmdTc5NCJ9.xC78DYuHL0B8s8pc4ENGFg';
+    var map = new mapboxgl.Map({
+        container: 'map',
+        style: 'mapbox://styles/mapbox/streets-v11',
+        center: [15.598411892216347, 46.369989805923666],
+        zoom: 14
+    });
+    function flyToStore(c1, c2) {
+        map.flyTo({
+            center: [c1, c2],
+            zoom: 15
+        });
+    }
+    map.addControl(new mapboxgl.NavigationControl());
+
+    map.on('load', function () {
+        map.addLayer({
+            id: 'places',
+            type: 'fill',
+            source: {
+                type: "geojson",
+                data: "/Home/OnGetPoints"
+            },
+            paint: {
+                'fill-color': 'rgba(0,0,255,0.3)',
+                'fill-outline-color': 'rgba(192,192,192,0.3)'
+            }
+        });
+
+        var popup = new mapboxgl.Popup({
+            closeButton: false,
+            closeOnClick: false
+        });
+
+        map.on('click', 'places', function (e) {
+            popup
+                .setLngLat(e.lngLat)
+                .setHTML('area:' + e.features[0].properties.area)
+                .addTo(map);
+        });
+
+        map.on('mouseenter', 'places', function () {
+            map.getCanvas().style.cursor = 'pointer';
+        });
+
+        map.on('mouseleave', 'places', function () {
+            map.getCanvas().style.cursor = '';
+            popup.remove();
+        });
+
+    });
+
+</script>
